@@ -4,8 +4,9 @@ import uploadLocal from '../middleware/uploadLocal.js';
 import Prescription from '../models/Prescription.js';
 import { sendPrescriptionReadyEmail } from '../services/emailService.js';
 import User from '../models/User.js';
-import path from 'path';
+import { uploadToS3 } from '../config/aws.js';
 import fs from 'fs';
+import path from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
@@ -57,23 +58,58 @@ router.post('/', authorize('patient'), uploadLocal.single('prescriptionFile'), a
     console.log('File:', req.file);
     console.log('Body:', req.body);
 
+    let s3Data = null;
+    
+    // If file uploaded, try to upload to S3
+    if (req.file) {
+      try {
+        console.log('📤 Uploading to S3...');
+        const fileBuffer = fs.readFileSync(req.file.path);
+        const fileObject = {
+          buffer: fileBuffer,
+          originalname: req.file.filename,
+          mimetype: req.file.mimetype
+        };
+        
+        s3Data = await uploadToS3(fileObject, 'prescriptions');
+        console.log('✅ File uploaded to S3:', s3Data);
+        
+        // Delete local file after successful S3 upload
+        fs.unlinkSync(req.file.path);
+        console.log('🗑️ Local file deleted');
+      } catch (s3Error) {
+        console.error('⚠️ S3 upload failed, keeping local copy:', s3Error.message);
+        // Continue with local file if S3 fails
+      }
+    }
+
     const prescriptionData = {
       patient: req.user._id,
       prescriptionNumber: req.body.prescriptionNumber,
-      doctorName: req.body.doctorName,
+      prescribedBy: {
+        name: req.body.doctorName,
+        hospital: req.body.hospital || '',
+        contact: req.body.doctorContact || ''
+      },
       prescriptionDate: req.body.prescriptionDate,
-      notes: req.body.notes,
-      status: 'pending'
+      notes: req.body.notes || '',
+      status: 'pending',
+      medications: [] // Empty for now, can be added later
     };
 
-    // Add file info if uploaded
-    if (req.file) {
+    // Add file info (S3 if available, otherwise local)
+    if (s3Data) {
+      prescriptionData.prescriptionImage = {
+        url: s3Data.url,
+        key: s3Data.key,
+        uploadedAt: new Date()
+      };
+    } else if (req.file) {
       prescriptionData.prescriptionImage = {
         url: `/uploads/prescriptions/${req.file.filename}`,
         filename: req.file.filename,
         uploadedAt: new Date()
       };
-      console.log('✅ File saved:', prescriptionData.prescriptionImage);
     }
 
     const prescription = await Prescription.create(prescriptionData);
@@ -81,7 +117,7 @@ router.post('/', authorize('patient'), uploadLocal.single('prescriptionFile'), a
 
     res.status(201).json({
       success: true,
-      message: 'Prescription uploaded successfully',
+      message: s3Data ? 'Prescription uploaded to S3 successfully' : 'Prescription uploaded successfully',
       data: prescription
     });
   } catch (error) {

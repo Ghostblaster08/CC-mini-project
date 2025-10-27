@@ -1,7 +1,18 @@
 import multer from 'multer';
 import multerS3 from 'multer-s3';
-import { s3, BUCKET_NAME } from '../config/aws.js';
+import AWS from 'aws-sdk';
 import path from 'path';
+
+// Configure AWS S3
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  sessionToken: process.env.AWS_SESSION_TOKEN,
+  region: process.env.AWS_REGION || 'us-east-1',
+  signatureVersion: 'v4'
+});
+
+const BUCKET_NAME = process.env.AWS_S3_BUCKET;
 
 // File filter for images
 const fileFilter = (req, file, cb) => {
