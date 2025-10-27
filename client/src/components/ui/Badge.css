@@ -1,0 +1,45 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.badge-default {
+  background-color: hsl(var(--primary));
+  color: white;
+}
+
+.badge-secondary {
+  background-color: hsl(var(--secondary));
+  color: white;
+}
+
+.badge-success {
+  background-color: hsl(var(--success));
+  color: white;
+}
+
+.badge-danger {
+  background-color: hsl(var(--danger));
+  color: white;
+}
+
+.badge-warning {
+  background-color: hsl(var(--accent));
+  color: white;
+}
+
+.badge-outline {
+  background-color: transparent;
+  border: 1px solid hsl(var(--border));
+  color: hsl(var(--foreground));
+}
+
+.badge-muted {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+}
