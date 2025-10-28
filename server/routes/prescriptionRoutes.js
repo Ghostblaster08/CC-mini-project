@@ -59,11 +59,28 @@ router.post('/', authorize('patient'), uploadLocal.single('prescriptionFile'), a
     console.log('Body:', req.body);
 
     let s3Data = null;
-    
-    // If file uploaded, try to upload to S3
-    if (req.file) {
+    let prescriptionFileData = null;
+
+    // Check if this is a direct S3 upload (pre-signed URL method)
+    if (req.body.prescriptionFile && typeof req.body.prescriptionFile === 'string') {
+      console.log('🎯 Direct S3 upload detected (pre-signed URL)');
       try {
-        console.log('📤 Uploading to S3...');
+        const fileData = JSON.parse(req.body.prescriptionFile);
+        prescriptionFileData = {
+          url: fileData.url,
+          key: fileData.key,
+          filename: fileData.key.split('/').pop(),
+          uploadedToS3: true
+        };
+        console.log('✅ S3 file data received:', prescriptionFileData);
+      } catch (parseError) {
+        console.error('❌ Error parsing prescriptionFile:', parseError);
+      }
+    }
+    // If file uploaded via traditional method, try to upload to S3
+    else if (req.file) {
+      try {
+        console.log('📤 Traditional upload - attempting S3...');
         const fileBuffer = fs.readFileSync(req.file.path);
         const fileObject = {
           buffer: fileBuffer,
@@ -74,12 +91,24 @@ router.post('/', authorize('patient'), uploadLocal.single('prescriptionFile'), a
         s3Data = await uploadToS3(fileObject, 'prescriptions');
         console.log('✅ File uploaded to S3:', s3Data);
         
+        prescriptionFileData = {
+          url: s3Data.url,
+          key: s3Data.key,
+          filename: req.file.filename,
+          uploadedToS3: true
+        };
+        
         // Delete local file after successful S3 upload
         fs.unlinkSync(req.file.path);
         console.log('🗑️ Local file deleted');
       } catch (s3Error) {
         console.error('⚠️ S3 upload failed, keeping local copy:', s3Error.message);
-        // Continue with local file if S3 fails
+        // Fall back to local file
+        prescriptionFileData = {
+          url: `/uploads/prescriptions/${req.file.filename}`,
+          filename: req.file.filename,
+          uploadedToS3: false
+        };
       }
     }
 
@@ -97,19 +126,11 @@ router.post('/', authorize('patient'), uploadLocal.single('prescriptionFile'), a
       medications: [] // Empty for now, can be added later
     };
 
-    // Add file info (S3 if available, otherwise local)
-    if (s3Data) {
-      prescriptionData.prescriptionImage = {
-        url: s3Data.url,
-        key: s3Data.key,
-        uploadedAt: new Date()
-      };
-    } else if (req.file) {
-      prescriptionData.prescriptionImage = {
-        url: `/uploads/prescriptions/${req.file.filename}`,
-        filename: req.file.filename,
-        uploadedAt: new Date()
-      };
+    // Add file info
+    if (prescriptionFileData) {
+      prescriptionData.prescriptionFile = prescriptionFileData;
+      prescriptionData.prescriptionImage = prescriptionFileData; // For backward compatibility
+      console.log('📎 File attached:', prescriptionFileData.uploadedToS3 ? 'S3' : 'Local');
     }
 
     const prescription = await Prescription.create(prescriptionData);
@@ -117,7 +138,7 @@ router.post('/', authorize('patient'), uploadLocal.single('prescriptionFile'), a
 
     res.status(201).json({
       success: true,
-      message: s3Data ? 'Prescription uploaded to S3 successfully' : 'Prescription uploaded successfully',
+      message: prescriptionFileData?.uploadedToS3 ? 'Prescription uploaded to S3 successfully!' : 'Prescription uploaded successfully',
       data: prescription
     });
   } catch (error) {

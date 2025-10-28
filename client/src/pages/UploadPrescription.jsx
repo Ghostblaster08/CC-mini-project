@@ -10,6 +10,7 @@ const UploadPrescription = () => {
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [dragActive, setDragActive] = useState(false);
   const [formData, setFormData] = useState({
     prescriptionNumber: '',
@@ -85,8 +86,12 @@ const UploadPrescription = () => {
     }
 
     setUploading(true);
+    setUploadProgress(0);
 
     try {
+      console.log('📤 Uploading via backend to S3...');
+      
+      // Create FormData with file and metadata
       const data = new FormData();
       data.append('prescriptionFile', file);
       data.append('prescriptionNumber', formData.prescriptionNumber);
@@ -94,13 +99,23 @@ const UploadPrescription = () => {
       data.append('prescriptionDate', formData.prescriptionDate);
       data.append('notes', formData.notes);
 
-      await prescriptionAPI.create(data);
+      // Upload via backend (backend will attempt S3, fallback to local)
+      const response = await prescriptionAPI.create(data);
       
-      toast.success('✅ Prescription uploaded successfully to AWS S3!');
+      console.log('✅ Upload successful:', response.data);
+      
+      // Check if uploaded to S3 or local
+      if (response.data.data?.prescriptionFile?.uploadedToS3 || 
+          response.data.data?.prescriptionImage?.url?.includes('s3.amazonaws.com')) {
+        toast.success('🎉 Prescription uploaded successfully to AWS S3!');
+      } else {
+        toast.success('✅ Prescription uploaded successfully!');
+      }
       
       // Reset form
       setFile(null);
       setPreview(null);
+      setUploadProgress(0);
       setFormData({
         prescriptionNumber: '',
         doctorName: '',
@@ -108,8 +123,8 @@ const UploadPrescription = () => {
         notes: ''
       });
     } catch (error) {
-      console.error('Upload error:', error);
-      toast.error(error.response?.data?.message || 'Failed to upload prescription');
+      console.error('❌ Upload error:', error);
+      toast.error(error.response?.data?.message || error.message || 'Failed to upload prescription');
     } finally {
       setUploading(false);
     }
@@ -261,7 +276,7 @@ const UploadPrescription = () => {
                 </div>
 
                 {/* Submit Button */}
-                <div style={{ marginTop: '2rem', display: 'flex', gap: '1rem' }}>
+                <div style={{ marginTop: '2rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                   <Button
                     type="submit"
                     disabled={uploading || !file}
@@ -270,12 +285,12 @@ const UploadPrescription = () => {
                     {uploading ? (
                       <>
                         <span className="animate-spin" style={{ marginRight: '0.5rem' }}>⏳</span>
-                        Uploading to AWS S3...
+                        Uploading to Cloud...
                       </>
                     ) : (
                       <>
                         <span style={{ marginRight: '0.5rem' }}>☁️</span>
-                        Upload to Cloud
+                        Upload to AWS S3
                       </>
                     )}
                   </Button>

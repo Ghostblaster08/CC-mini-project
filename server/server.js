@@ -18,6 +18,7 @@ import medicationRoutes from './routes/medicationRoutes.js';
 import prescriptionRoutes from './routes/prescriptionRoutes.js';
 import pharmacyRoutes from './routes/pharmacyRoutes.js';
 import inventoryRoutes from './routes/inventoryRoutes.js';
+import uploadRoutes from './routes/uploadRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -46,6 +47,7 @@ app.use('/api/medications', medicationRoutes);
 app.use('/api/prescriptions', prescriptionRoutes);
 app.use('/api/pharmacy', pharmacyRoutes);
 app.use('/api/inventory', inventoryRoutes);
+app.use('/api', uploadRoutes); // Pre-signed URL endpoint
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

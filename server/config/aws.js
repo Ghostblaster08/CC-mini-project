@@ -19,24 +19,38 @@ export const BUCKET_NAME = process.env.AWS_S3_BUCKET;
 
 // Upload file to S3
 export const uploadToS3 = async (file, folder = 'prescriptions') => {
+  const key = `${folder}/${Date.now()}-${file.originalname}`;
+  
   const params = {
     Bucket: BUCKET_NAME,
-    Key: `${folder}/${Date.now()}-${file.originalname}`,
+    Key: key,
     Body: file.buffer,
     ContentType: file.mimetype,
-    ACL: 'private'
+    // ACL: 'private' // Remove ACL to avoid permission issues
   };
 
   try {
-    const result = await s3.upload(params).promise();
+    console.log('📤 Uploading to S3:', key);
+    console.log('   Bucket:', BUCKET_NAME);
+    console.log('   ContentType:', file.mimetype);
+    
+    // Use putObject instead of upload for simpler operation
+    await s3.putObject(params).promise();
+    
+    const fileUrl = `https://${BUCKET_NAME}.s3.amazonaws.com/${key}`;
+    
+    console.log('✅ S3 upload successful!');
+    console.log('   URL:', fileUrl);
+    
     return {
-      url: result.Location,
-      key: result.Key,
-      bucket: result.Bucket
+      url: fileUrl,
+      key: key,
+      bucket: BUCKET_NAME
     };
   } catch (error) {
-    console.error('S3 Upload Error:', error);
-    throw new Error('Failed to upload file to S3');
+    console.error('❌ S3 Upload Error:', error.message);
+    console.error('   Error Code:', error.code);
+    throw new Error(`Failed to upload file to S3: ${error.message}`);
   }
 };
 
