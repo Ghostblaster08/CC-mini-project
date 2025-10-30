@@ -25,14 +25,28 @@ export const AuthProvider = ({ children }) => {
     const response = await authAPI.login({ email, password });
     console.log('📡 AuthContext: Login response:', response.data);
     
-    const { data, idToken, accessToken, refreshToken } = response.data;
+  const { data, token, idToken, accessToken, refreshToken } = response.data;
+  const idTokenValue = idToken || token;
     
     console.log('💾 Saving Cognito tokens to localStorage');
     
     // Store Cognito tokens
-    localStorage.setItem('idToken', idToken);
-    localStorage.setItem('accessToken', accessToken);
-    localStorage.setItem('refreshToken', refreshToken);
+    if (idTokenValue) {
+      localStorage.setItem('idToken', idTokenValue);
+    } else {
+      localStorage.removeItem('idToken');
+    }
+    if (accessToken) {
+      localStorage.setItem('accessToken', accessToken);
+    } else {
+      localStorage.removeItem('accessToken');
+    }
+
+    if (refreshToken) {
+      localStorage.setItem('refreshToken', refreshToken);
+    } else {
+      localStorage.removeItem('refreshToken');
+    }
     localStorage.setItem('user', JSON.stringify(data));
     setUser(data);
     

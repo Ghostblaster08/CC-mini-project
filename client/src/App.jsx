@@ -3,7 +3,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
-import PrivateRoute from './components/PrivateRoute';
+import ProtectedRoute from './components/ProtectedRoute';
 import Navbar from './components/Navbar';
 import LandingPage from './pages/LandingPage';
 import Login from './pages/Login';
@@ -28,17 +28,17 @@ function App() {
               <Route
                 path="/dashboard"
                 element={
-                  <PrivateRoute>
+                  <ProtectedRoute>
                     <Dashboard />
-                  </PrivateRoute>
+                  </ProtectedRoute>
                 }
               />
               <Route
                 path="/prescriptions"
                 element={
-                  <PrivateRoute>
+                  <ProtectedRoute>
                     <UploadPrescription />
-                  </PrivateRoute>
+                  </ProtectedRoute>
                 }
               />
               <Route
@@ -62,4 +62,3 @@ function App() {
 }
 
 export default App;
-
