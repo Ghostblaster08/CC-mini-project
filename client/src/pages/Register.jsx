@@ -39,22 +39,41 @@ const Register = () => {
       return;
     }
 
+    // Validate password meets Cognito requirements
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#])[A-Za-z\d@$!%*?&#]{8,}$/;
+    if (!passwordRegex.test(formData.password)) {
+      toast.error(
+        'Password must be at least 8 characters with uppercase, lowercase, number, and special character'
+      );
+      return;
+    }
+
     setLoading(true);
 
     try {
-      console.log('📝 Attempting registration with:', formData.email, 'Role:', formData.role);
+      console.log('📝 Attempting Cognito registration with:', formData.email, 'Role:', formData.role);
       const { confirmPassword, ...registerData } = formData;
-      const user = await register(registerData);
-      console.log('✅ Registration successful! User:', user);
-      console.log('📍 User role:', user.role);
+      const result = await register(registerData);
+      console.log('✅ Registration result:', result);
       
-      toast.success('Registration successful!');
-      console.log('🚀 Navigating to dashboard...');
-      navigate('/dashboard');
-      console.log('✅ Navigate called');
+      if (result.requiresVerification) {
+        toast.success('Registration successful! Please check your email for verification code.');
+        console.log('� Redirecting to verification page...');
+        navigate('/verify-email');
+      } else {
+        toast.success('Registration successful! You can now log in.');
+        console.log('🚀 Navigating to login...');
+        navigate('/login');
+      }
     } catch (error) {
       console.error('❌ Registration error:', error);
-      toast.error(error.response?.data?.message || 'Registration failed');
+      const errorMessage = error.response?.data?.message || 'Registration failed';
+      toast.error(errorMessage);
+      
+      // Show specific guidance for password issues
+      if (errorMessage.includes('password')) {
+        toast.info('Password must have: 8+ chars, uppercase, lowercase, number, special char');
+      }
     } finally {
       setLoading(false);
     }

@@ -8,12 +8,12 @@ const API = axios.create({
   }
 });
 
-// Add auth token to requests
+// Add Cognito ID token to requests
 API.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const idToken = localStorage.getItem('idToken');
+    if (idToken) {
+      config.headers.Authorization = `Bearer ${idToken}`;
     }
     return config;
   },
@@ -27,7 +27,10 @@ API.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
+      // Token expired or invalid
+      localStorage.removeItem('idToken');
+      localStorage.removeItem('accessToken');
+      localStorage.removeItem('refreshToken');
       localStorage.removeItem('user');
       window.location.href = '/login';
     }

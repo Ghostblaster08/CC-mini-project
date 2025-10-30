@@ -1,7 +1,12 @@
 import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
 
 const userSchema = new mongoose.Schema({
+  cognitoUserId: {
+    type: String,
+    required: [true, 'Cognito User ID is required'],
+    unique: true,
+    index: true
+  },
   name: {
     type: String,
     required: [true, 'Please provide a name'],
@@ -12,13 +17,8 @@ const userSchema = new mongoose.Schema({
     required: [true, 'Please provide an email'],
     unique: true,
     lowercase: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email']
-  },
-  password: {
-    type: String,
-    required: [true, 'Please provide a password'],
-    minlength: 6,
-    select: false
+    match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email'],
+    index: true
   },
   role: {
     type: String,
@@ -47,26 +47,13 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  resetPasswordToken: String,
-  resetPasswordExpire: Date
+  lastLogin: {
+    type: Date,
+    default: null
+  }
 }, {
   timestamps: true
 });
-
-// Hash password before saving
-userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
-    return next();
-  }
-  const salt = await bcrypt.genSalt(10);
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
-});
-
-// Compare password method
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
-};
 
 const User = mongoose.model('User', userSchema);
 

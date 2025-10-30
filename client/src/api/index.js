@@ -1,10 +1,15 @@
 import API from './axios';
 
-// Auth APIs
+// Auth APIs (AWS Cognito)
 export const authAPI = {
   register: (data) => API.post('/auth/register', data),
   login: (data) => API.post('/auth/login', data),
-  getProfile: () => API.get('/auth/me')
+  verifyEmail: (data) => API.post('/auth/verify', data),
+  resendVerificationCode: (data) => API.post('/auth/resend-code', data),
+  forgotPassword: (data) => API.post('/auth/forgot-password', data),
+  resetPassword: (data) => API.post('/auth/reset-password', data),
+  getProfile: () => API.get('/auth/me'),
+  logout: () => API.post('/auth/logout')
 };
 
 // Patient APIs
