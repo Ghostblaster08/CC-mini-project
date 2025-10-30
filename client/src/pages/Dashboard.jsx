@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import Button from '../components/ui/Button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
+import ParsedMedications from '../components/ParsedMedications';
 
 const Dashboard = () => {
   const { user, logout } = useAuth();
@@ -56,6 +57,12 @@ const Dashboard = () => {
     } catch (error) {
       toast.error('Failed to log intake');
     }
+  };
+
+  const handleMedicationsCreated = (newMedications) => {
+    // Refresh dashboard data when new medications are created
+    fetchDashboardData();
+    toast.info(`${newMedications.length} new medication schedules added to your dashboard!`);
   };
 
   if (loading) {
@@ -200,9 +207,25 @@ const Dashboard = () => {
                     Backend running
                   </p>
                 </div>
+                <div>
+                  <Badge variant="secondary">🤖 AI Parser</Badge>
+                  <p style={{ fontSize: '0.875rem', marginTop: '0.5rem', color: 'hsl(var(--muted-foreground))' }}>
+                    Flask service for prescription parsing
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
+        </motion.div>
+
+        {/* Parsed Medications Section */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.6 }}
+          style={{ marginTop: '2rem' }}
+        >
+          <ParsedMedications onMedicationsCreated={handleMedicationsCreated} />
         </motion.div>
       </div>
     </div>

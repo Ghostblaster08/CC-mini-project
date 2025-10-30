@@ -33,7 +33,9 @@ export const prescriptionAPI = {
   }),
   getById: (id) => API.get(`/prescriptions/${id}`),
   updateStatus: (id, status) => API.put(`/prescriptions/${id}/status`, { status }),
-  delete: (id) => API.delete(`/prescriptions/${id}`)
+  delete: (id) => API.delete(`/prescriptions/${id}`),
+  parse: (id) => API.post(`/prescriptions/${id}/parse`),
+  createMedications: (id, data) => API.post(`/prescriptions/${id}/create-medications`, data)
 };
 
 // Pharmacy APIs

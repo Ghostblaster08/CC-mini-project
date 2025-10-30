@@ -35,11 +35,21 @@ const prescriptionSchema = new mongoose.Schema({
     },
     quantity: {
       type: Number,
-      required: true
+      default: 1
     },
     frequency: String,
     duration: String,
-    instructions: String
+    instructions: String,
+    isActive: {
+      type: Boolean,
+      default: true
+    },
+    source: {
+      type: String,
+      enum: ['manual', 'prescription_parser'],
+      default: 'manual'
+    },
+    parsedAt: Date
   }],
   prescriptionDate: {
     type: Date,
@@ -57,7 +67,25 @@ const prescriptionSchema = new mongoose.Schema({
   prescriptionImage: {
     url: String,
     key: String, // S3 key for deletion
-    uploadedAt: Date
+    uploadedAt: Date,
+    uploadedToS3: Boolean
+  },
+  prescriptionFile: {
+    url: String,
+    key: String,
+    filename: String,
+    uploadedToS3: Boolean,
+    uploadedAt: {
+      type: Date,
+      default: Date.now
+    }
+  },
+  parsingResult: {
+    success: Boolean,
+    medicationsFound: Number,
+    extractedTextLength: Number,
+    error: String,
+    processedAt: Date
   },
   notes: {
     type: String
